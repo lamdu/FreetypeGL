@@ -1,0 +1,11 @@
+*.hi
+*.o
+*.p_hi
+*.p_o
+*.i_hi
+*.i_o
+*.dyn_hi
+*.dyn_o
+/dist/
+/cabal-dev/
+/.stack-work/
