@@ -9,7 +9,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/Peaker/bindings-freetype-gl
-    commit: b06916d31afacd45112e70739f475fb8f912d27c
+    commit: fbf505719eb51b4af7dd04e5d3184e915aba3fda
 - location:
     git: https://github.com/Peaker/freetype2
     commit: b6b3f82b9f8acb925d8f36ecc1520832ad256444
