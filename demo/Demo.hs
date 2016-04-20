@@ -4,7 +4,7 @@ module Main (main) where
 
 import           Control.Exception (bracket_, bracket)
 import           Control.Monad (unless)
-import           Data.IORef
+import           Control.Monad.Trans.State (evalStateT)
 import qualified Graphics.FreetypeGL.FontManager as FontManager
 import qualified Graphics.FreetypeGL.Markup as Markup
 import qualified Graphics.FreetypeGL.Mat4 as Mat4
@@ -12,8 +12,8 @@ import           Graphics.FreetypeGL.Shader (Shader)
 import qualified Graphics.FreetypeGL.Shader as Shader
 import           Graphics.FreetypeGL.TextBuffer (TextBuffer)
 import qualified Graphics.FreetypeGL.TextBuffer as TextBuffer
-import qualified Graphics.Rendering.OpenGL as GL
 import           Graphics.Rendering.OpenGL (($=))
+import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
 import           System.Environment (getArgs)
 
@@ -68,11 +68,13 @@ main =
                     do
                         manager <- TextBuffer.getFontManager textBuffer
                         font <- FontManager.getFromFileName manager ttfPath 16
-                        pen <- newIORef (TextBuffer.Pen 0 480)
-                        TextBuffer.addText textBuffer pen Markup.def font "Hello world!\n"
-                        TextBuffer.addText textBuffer pen Markup.def font "It finally works!\n"
-                        TextBuffer.addText textBuffer pen Markup.def font "Wowzers!\n"
-                        TextBuffer.addText textBuffer pen Markup.def {Markup.gamma=0}   font "Gamma = 0!\n"
-                        TextBuffer.addText textBuffer pen Markup.def {Markup.gamma=0.5} font "Gamma = 0.5!\n"
-                        TextBuffer.addText textBuffer pen Markup.def {Markup.gamma=1}   font "Gamma = 1!\n"
+                        (`evalStateT` TextBuffer.Pen 0 480) $
+                            do
+                                TextBuffer.addText textBuffer Markup.def font "Hello world!\n"
+                                TextBuffer.addText textBuffer Markup.def font "It finally works!\n"
+                                TextBuffer.addText textBuffer Markup.def font "Wowzers!\n"
+                                let gamma x = Markup.def { Markup.gamma = x }
+                                TextBuffer.addText textBuffer (gamma 0)   font "Gamma = 0!\n"
+                                TextBuffer.addText textBuffer (gamma 0.5) font "Gamma = 0.5!\n"
+                                TextBuffer.addText textBuffer (gamma 1)   font "Gamma = 1!\n"
                         loop win shader textBuffer

@@ -14,8 +14,7 @@ module Graphics.FreetypeGL.TextBuffer
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
-import           Control.Exception (finally)
-import           Data.IORef
+import           Control.Monad.Trans.State (StateT(..))
 import           Foreign.C.String (withCStringLen)
 import           Foreign.C.Types (CUInt)
 import           Foreign.Marshal.Alloc (alloca)
@@ -55,20 +54,18 @@ new renderDepth (Shader program) =
 delete :: TextBuffer -> IO ()
 delete (TextBuffer ptr) = TB.c'text_buffer_delete ptr
 
-withPen :: IORef Pen -> (Ptr Vec234.C'vec2 -> IO a) -> IO a
-withPen penRef act =
+withPen :: (Ptr Vec234.C'vec2 -> IO a) -> StateT Pen IO a
+withPen act = StateT $ \oldPen ->
+    alloca $ \penPtr ->
     do
-        penVec <- vecOfPen <$> readIORef penRef
-        alloca $ \penPtr ->
-            do
-                poke penPtr penVec
-                act penPtr
-                    `finally`
-                    (penOfVec <$> peek penPtr >>= writeIORef penRef)
+        poke penPtr (vecOfPen oldPen)
+        res <- act penPtr
+        newPen <- penOfVec <$> peek penPtr
+        return (res, newPen)
 
-addText :: TextBuffer -> IORef Pen -> Markup -> TextureFont -> String -> IO ()
-addText (TextBuffer ptr) penRef markup font str =
-    withPen penRef $ \penPtr ->
+addText :: TextBuffer -> Markup -> TextureFont -> String -> StateT Pen IO ()
+addText (TextBuffer ptr) markup font str =
+    withPen $ \penPtr ->
     MU.withMarkupPtr markup font $ \markupPtr ->
     withCStringLen str $ \(cStr, len) ->
     TB.c'text_buffer_add_text ptr penPtr markupPtr cStr (fromIntegral len)
@@ -83,9 +80,9 @@ c'Align AlignLeft   = TB.c'ALIGN_LEFT
 c'Align AlignCenter = TB.c'ALIGN_CENTER
 c'Align AlignRight  = TB.c'ALIGN_RIGHT
 
-align :: TextBuffer -> IORef Pen -> Align -> IO ()
-align (TextBuffer ptr) penRef algn =
-    withPen penRef $ \penPtr ->
+align :: TextBuffer -> Align -> StateT Pen IO ()
+align (TextBuffer ptr) algn =
+    withPen $ \penPtr ->
     TB.c'text_buffer_align ptr penPtr (c'Align algn)
 
 render :: TextBuffer -> IO ()
