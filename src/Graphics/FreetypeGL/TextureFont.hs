@@ -2,8 +2,8 @@
 
 module Graphics.FreetypeGL.TextureFont
     ( TextureFont(..), newFromFile, newFromMemory, delete
-    , PtSize, getSize
-    , getAtlas
+    , PtSize, getSize, getAtlas
+    , getHeight, ascender, descender, underlinePosition, underlineThickness
     ) where
 
 import qualified Bindings.FreetypeGL.TextureFont as TF
@@ -36,6 +36,21 @@ newFromMemory (TextureAtlas atlas) size mem =
 
 delete :: TextureFont -> IO ()
 delete (TextureFont ptr) = TF.c'texture_font_delete ptr
+
+getHeight :: TextureFont -> IO Float
+getHeight (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'height ptr)
+
+ascender :: TextureFont -> IO Float
+ascender (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'ascender ptr)
+
+descender :: TextureFont -> IO Float
+descender (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'descender ptr)
+
+underlinePosition :: TextureFont -> IO Float
+underlinePosition (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'underline_position ptr)
+
+underlineThickness :: TextureFont -> IO Float
+underlineThickness (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'underline_thickness ptr)
 
 getSize :: TextureFont -> IO PtSize
 getSize (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'size ptr)
