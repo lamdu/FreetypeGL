@@ -2,7 +2,7 @@
 
 module Graphics.FreetypeGL.TextBuffer
     ( TextBuffer
-    , withTextBuffer
+    , new, delete
     , getFontManager
     , RenderDepth(..)
     , Pen(..)
@@ -14,7 +14,7 @@ module Graphics.FreetypeGL.TextBuffer
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
-import           Control.Exception (bracket, finally)
+import           Control.Exception (finally)
 import           Data.IORef
 import           Foreign.C.String (withCStringLen)
 import           Foreign.C.Types (CUInt)
@@ -54,9 +54,6 @@ new renderDepth (Shader program) =
 
 delete :: TextBuffer -> IO ()
 delete (TextBuffer ptr) = TB.c'text_buffer_delete ptr
-
-withTextBuffer :: RenderDepth -> Shader -> (TextBuffer -> IO a) -> IO a
-withTextBuffer renderDepth shader = bracket (new renderDepth shader) delete
 
 withPen :: IORef Pen -> (Ptr Vec234.C'vec2 -> IO a) -> IO a
 withPen penRef act =

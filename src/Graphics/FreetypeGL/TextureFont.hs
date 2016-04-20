@@ -1,13 +1,12 @@
 -- | Texture fonts
 
 module Graphics.FreetypeGL.TextureFont
-    ( TextureFont(..), withFontFromFile, withFontFromMemory
+    ( TextureFont(..), newFromFile, newFromMemory, delete
     , PtSize, getSize
     , getAtlas
     ) where
 
 import qualified Bindings.FreetypeGL.TextureFont as TF
-import           Control.Exception (bracket)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Foreign.C.String (withCString)
@@ -37,14 +36,6 @@ newFromMemory (TextureAtlas atlas) size mem =
 
 delete :: TextureFont -> IO ()
 delete (TextureFont ptr) = TF.c'texture_font_delete ptr
-
-withFontFromFile :: TextureAtlas -> PtSize -> FilePath -> (TextureFont -> IO a) -> IO a
-withFontFromFile atlas size path =
-    bracket (newFromFile atlas size path) delete
-
-withFontFromMemory :: TextureAtlas -> PtSize -> ByteString -> (TextureFont -> IO a) -> IO a
-withFontFromMemory atlas size bs =
-    bracket (newFromMemory atlas size bs) delete
 
 getSize :: TextureFont -> IO PtSize
 getSize (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'size ptr)

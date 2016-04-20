@@ -2,7 +2,7 @@
 
 module Main (main) where
 
-import           Control.Exception (bracket_)
+import           Control.Exception (bracket_, bracket)
 import           Control.Monad (unless)
 import           Data.IORef
 import qualified Graphics.FreetypeGL.FontManager as FontManager
@@ -61,7 +61,10 @@ main =
 #endif
                 GL.viewport $= (GL.Position 0 0, GL.Size 640 480)
                 shader <- Shader.newTextShader
-                TextBuffer.withTextBuffer TextBuffer.LCD_FILTERING_ON shader $ \textBuffer ->
+                bracket
+                    (TextBuffer.new TextBuffer.LCD_FILTERING_ON shader)
+                    TextBuffer.delete
+                    $ \textBuffer ->
                     do
                         manager <- TextBuffer.getFontManager textBuffer
                         font <- FontManager.getFromFileName manager ttfPath 16
