@@ -10,6 +10,8 @@ module Graphics.FreetypeGL.TextBuffer
     , addText
     , Align(..), align
     , render
+    , BoundingBox(..)
+    , boundingBox
     ) where
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
@@ -84,6 +86,24 @@ align :: TextBuffer -> Align -> StateT Pen IO ()
 align (TextBuffer ptr) algn =
     withPen $ \penPtr ->
     TB.c'text_buffer_align ptr penPtr (c'Align algn)
+
+data BoundingBox = BoundingBox
+    { bbLeft :: !Float
+    , bbTop :: !Float
+    , bbWidth :: !Float
+    , bbHeight :: !Float
+    } deriving (Eq, Ord, Read, Show)
+
+boundingBox :: TextBuffer -> StateT Pen IO BoundingBox
+boundingBox (TextBuffer ptr) =
+    withPen $ \penPtr ->
+    alloca $ \boundsVec4 ->
+    do
+        TB.c'wrapper__text_buffer_get_bounds boundsVec4 ptr penPtr
+        Vec234.C'vec4 left top width height <- peek boundsVec4
+        return (BoundingBox (f left) (f top) (f width) (f height))
+    where
+        f = realToFrac
 
 render :: TextBuffer -> IO ()
 render (TextBuffer ptr) = TB.c'text_buffer_render ptr

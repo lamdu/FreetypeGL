@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 module Main (main) where
 
 import           Control.Exception (bracket_, bracket)
@@ -17,9 +15,7 @@ import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
 import           System.Environment (getArgs)
 
-#ifndef darwin_HOST_OS
 import qualified Graphics.GL.GLEW.Init as GLEW
-#endif
 
 assert :: String -> Bool -> IO ()
 assert _ True = return ()
@@ -56,9 +52,7 @@ main =
                 Just win <- GLFW.createWindow 640 480 "freetype-gl-demo" Nothing Nothing
                 GLFW.makeContextCurrent $ Just win
                 GLFW.swapInterval 1
-#ifndef darwin_HOST_OS
                 GLEW.initGlew
-#endif
                 GL.viewport $= (GL.Position 0 0, GL.Size 640 480)
                 shader <- Shader.newTextShader
                 bracket

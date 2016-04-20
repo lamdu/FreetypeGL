@@ -69,7 +69,7 @@ withMarkupPtr :: Markup -> TextureFont -> (Ptr MU.C'markup_t -> IO a) -> IO a
 withMarkupPtr Markup{..} font@(TextureFont fontPtr) act =
     alloca $ \ptr ->
     do
-        size <- TF.getSize font
+        size <- TF.size font
         let cMarkup =
                 MU.C'markup_t
                 -- family,bold,italic unneeded, we always give a font:
