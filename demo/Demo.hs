@@ -12,7 +12,6 @@ import           Graphics.FreetypeGL.Shader (Shader)
 import qualified Graphics.FreetypeGL.Shader as Shader
 import           Graphics.FreetypeGL.TextBuffer (TextBuffer)
 import qualified Graphics.FreetypeGL.TextBuffer as TextBuffer
-import qualified Graphics.FreetypeGL.TextureAtlas as TextureAtlas
 import qualified Graphics.Rendering.OpenGL as GL
 import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.UI.GLFW as GLFW
@@ -69,7 +68,8 @@ main =
                         pen <- newIORef (TextBuffer.Pen 0 480)
                         TextBuffer.addText textBuffer pen Markup.def font "Hello world!\n"
                         TextBuffer.addText textBuffer pen Markup.def font "It finally works!\n"
-                        TextBuffer.addText textBuffer pen Markup.def font "Wowzers!"
-                        atlas <- FontManager.getAtlas manager
-                        TextureAtlas.upload atlas
+                        TextBuffer.addText textBuffer pen Markup.def font "Wowzers!\n"
+                        TextBuffer.addText textBuffer pen Markup.def {Markup.gamma=0}   font "Gamma = 0!\n"
+                        TextBuffer.addText textBuffer pen Markup.def {Markup.gamma=0.5} font "Gamma = 0.5!\n"
+                        TextBuffer.addText textBuffer pen Markup.def {Markup.gamma=1}   font "Gamma = 1!\n"
                         loop win shader textBuffer
