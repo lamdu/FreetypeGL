@@ -17,18 +17,19 @@ module Graphics.FreetypeGL.TextBuffer
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
 import           Control.Monad.Trans.State (StateT(..))
-import           Foreign.C.String (withCStringLen)
+import           Data.List (genericLength)
+import           Foreign.C.String (withCString)
 import           Foreign.C.Types (CUInt)
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr)
 import           Foreign.Storable (Storable(..))
+import           Graphics.FreetypeGL.FontManager (FontManager(..))
 import           Graphics.FreetypeGL.Markup (Markup(..))
 import qualified Graphics.FreetypeGL.Markup as MU
 import           Graphics.FreetypeGL.Shader (Shader(..))
 import           Graphics.FreetypeGL.TextureAtlas (RenderDepth(..), c'renderDepth)
 import           Graphics.FreetypeGL.TextureFont (TextureFont(..))
-import           Graphics.FreetypeGL.FontManager (FontManager(..))
 
 data Pen = Pen { penX :: !Float, penY :: !Float }
     deriving (Eq, Ord, Read, Show)
@@ -69,8 +70,8 @@ addText :: TextBuffer -> Markup -> TextureFont -> String -> StateT Pen IO ()
 addText (TextBuffer ptr) markup font str =
     withPen $ \penPtr ->
     MU.withMarkupPtr markup font $ \markupPtr ->
-    withCStringLen str $ \(cStr, len) ->
-    TB.c'text_buffer_add_text ptr penPtr markupPtr cStr (fromIntegral len)
+    withCString str $ \cStr ->
+    TB.c'text_buffer_add_text ptr penPtr markupPtr cStr (genericLength str)
 
 clear :: TextBuffer -> IO ()
 clear (TextBuffer ptr) = TB.c'text_buffer_clear ptr
