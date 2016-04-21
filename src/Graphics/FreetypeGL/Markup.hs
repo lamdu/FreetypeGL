@@ -19,6 +19,7 @@ import           Graphics.FreetypeGL.TextureFont (TextureFont(..))
 import qualified Graphics.FreetypeGL.TextureFont as TF
 
 data RGBA = RGBA Float Float Float Float
+    deriving (Eq, Ord, Read, Show)
 
 -- We intentionally omit the family,size,bold,italic fields which
 -- really don't belong in Markup, and are used to select a font. We
