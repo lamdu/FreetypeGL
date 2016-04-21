@@ -16,15 +16,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     Graphics.FreetypeGL.TextBuffer
+  exposed-modules:     Graphics.FreetypeGL.FontManager
+                     , Graphics.FreetypeGL.Init
+                     , Graphics.FreetypeGL.Markup
+                     , Graphics.FreetypeGL.Mat4
+                     , Graphics.FreetypeGL.Shader
+                     , Graphics.FreetypeGL.TextBuffer
                      , Graphics.FreetypeGL.TextureFont
                      , Graphics.FreetypeGL.TextureAtlas
-                     , Graphics.FreetypeGL.FontManager
-                     , Graphics.FreetypeGL.Mat4
-                     , Graphics.FreetypeGL.Markup
-                     , Graphics.FreetypeGL.Shader
-  if !os(osx)
-    exposed-modules:   Graphics.GL.GLEW.Init
   build-depends:       base >= 4.7 && < 5
                      , bindings-freetype-gl == 0.1.*
                      , bytestring >= 0.9

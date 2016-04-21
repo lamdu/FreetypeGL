@@ -1,19 +1,19 @@
 -- | A mini wrapper for the GLEW init function
 {-# LANGUAGE CPP #-}
-module Graphics.GL.GLEW.Init
-    ( initGlew
+module Graphics.FreetypeGL.Init
+    ( initFreetypeGL
     ) where
 
 #ifndef darwin_HOST_OS
 import qualified Bindings.GLEW.Init as GLEW
-#endif
 import           Foreign.Marshal.Error (throwIf_)
+#endif
 
-initGlew :: IO ()
+initFreetypeGL :: IO ()
 #ifdef darwin_HOST_OS
-initGlew = return ()
+initFreetypeGL = return ()
 #else
-initGlew =
+initFreetypeGL =
     throwIf_ (/= GLEW.c'GLEW_OK)
     (error . ("glewInit error: " ++) . show)
     GLEW.c'glewInit

@@ -4,13 +4,13 @@ import           Control.Exception (bracket_, bracket)
 import           Control.Monad (unless)
 import           Control.Monad.Trans.State (evalStateT)
 import qualified Graphics.FreetypeGL.FontManager as FontManager
+import           Graphics.FreetypeGL.Init (initFreetypeGL)
 import qualified Graphics.FreetypeGL.Markup as Markup
 import qualified Graphics.FreetypeGL.Mat4 as Mat4
 import           Graphics.FreetypeGL.Shader (Shader)
 import qualified Graphics.FreetypeGL.Shader as Shader
 import           Graphics.FreetypeGL.TextBuffer (TextBuffer)
 import qualified Graphics.FreetypeGL.TextBuffer as TextBuffer
-import qualified Graphics.GL.GLEW.Init as GLEW
 import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
@@ -51,7 +51,7 @@ main =
                 Just win <- GLFW.createWindow 640 480 "freetype-gl-demo" Nothing Nothing
                 GLFW.makeContextCurrent $ Just win
                 GLFW.swapInterval 1
-                GLEW.initGlew
+                initFreetypeGL
                 GL.viewport $= (GL.Position 0 0, GL.Size 640 480)
                 shader <- Shader.newTextShader
                 bracket
