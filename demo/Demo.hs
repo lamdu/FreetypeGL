@@ -10,12 +10,11 @@ import           Graphics.FreetypeGL.Shader (Shader)
 import qualified Graphics.FreetypeGL.Shader as Shader
 import           Graphics.FreetypeGL.TextBuffer (TextBuffer)
 import qualified Graphics.FreetypeGL.TextBuffer as TextBuffer
+import qualified Graphics.GL.GLEW.Init as GLEW
 import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
 import           System.Environment (getArgs)
-
-import qualified Graphics.GL.GLEW.Init as GLEW
 
 assert :: String -> Bool -> IO ()
 assert _ True = return ()
