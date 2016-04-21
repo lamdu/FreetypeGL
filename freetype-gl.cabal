@@ -20,6 +20,7 @@ library
                      , Graphics.FreetypeGL.Init
                      , Graphics.FreetypeGL.Markup
                      , Graphics.FreetypeGL.Mat4
+                     , Graphics.FreetypeGL.RGBA
                      , Graphics.FreetypeGL.Shader
                      , Graphics.FreetypeGL.TextBuffer
                      , Graphics.FreetypeGL.TextureFont

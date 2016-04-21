@@ -2,16 +2,19 @@
 
 module Graphics.FreetypeGL.Shader
     ( Shader(..), new
-    , newTextShader
+    , newTextShader, newDistanceFieldShader
     , TextShaderUniforms(..), bindTextShaderUniforms
+    , DistanceFieldShaderUniforms(..), bindDistanceFieldShaderUniforms
     ) where
 
-import           Bindings.FreetypeGL.Paths (textShaderVertPath, textShaderFragPath)
+import qualified Bindings.FreetypeGL.Paths as Paths
 import qualified Bindings.FreetypeGL.Shader as Shader
 import           Control.Monad (forM_, unless)
 import           Foreign.C.String (withCString)
 import           Graphics.FreetypeGL.Mat4 (Mat4)
 import qualified Graphics.FreetypeGL.Mat4 as Mat4
+import           Graphics.FreetypeGL.RGBA (RGBA)
+import qualified Graphics.FreetypeGL.RGBA as RGBA
 import           System.Directory (doesFileExist)
 
 newtype Shader = Shader Word
@@ -27,19 +30,32 @@ new vertPath fragPath =
             withCString fragPath $ \cStrFragPath ->
             Shader . fromIntegral <$> Shader.c'shader_load cStrVertPath cStrFragPath
 
--- requires uniform bindings for model, view, projection
-newTextShader :: IO Shader
-newTextShader =
-    do
-        v <- textShaderVertPath
-        f <- textShaderFragPath
-        new v f
-
 data TextShaderUniforms = TextShaderUniforms
     { textShaderModel :: !Mat4
     , textShaderView :: !Mat4
     , textShaderProjection :: !Mat4
     }
+
+newTextShader :: IO Shader
+newTextShader =
+    do
+        v <- Paths.textShaderVert
+        f <- Paths.textShaderFrag
+        new v f
+
+data DistanceFieldShaderUniforms = DistanceFieldShaderUniforms
+    { distanceFieldShaderModel :: !Mat4
+    , distanceFieldShaderView :: !Mat4
+    , distanceFieldShaderProjection :: !Mat4
+    , distanceFieldColor :: !RGBA
+    }
+
+newDistanceFieldShader :: IO Shader
+newDistanceFieldShader =
+    do
+        v <- Paths.textDistanceFieldShaderVert
+        f <- Paths.textDistanceFieldShaderFrag
+        new v f
 
 bindTextShaderUniforms :: Shader -> TextShaderUniforms -> IO ()
 bindTextShaderUniforms (Shader shader) uniforms =
@@ -47,3 +63,14 @@ bindTextShaderUniforms (Shader shader) uniforms =
     Mat4.withMat4Ptr (textShaderView uniforms) $ \view ->
     Mat4.withMat4Ptr (textShaderProjection uniforms) $ \projection ->
     Shader.c'wrapper__bind_text_shader_uniforms (fromIntegral shader) model view projection
+
+bindDistanceFieldShaderUniforms :: Shader -> DistanceFieldShaderUniforms -> IO ()
+bindDistanceFieldShaderUniforms (Shader shader) uniforms =
+    Mat4.withMat4Ptr (distanceFieldShaderModel uniforms) $ \model ->
+    Mat4.withMat4Ptr (distanceFieldShaderView uniforms) $ \view ->
+    Mat4.withMat4Ptr (distanceFieldShaderProjection uniforms) $ \projection ->
+    RGBA.withVec (distanceFieldColor uniforms) $ \color ->
+    Shader.c'wrapper__bind_distance_field_shader_uniforms
+    shaderId color model view projection
+    where
+        shaderId = fromIntegral shader

@@ -15,11 +15,10 @@ import           Foreign.C.Types (CInt)
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Ptr (Ptr, nullPtr)
 import           Foreign.Storable (Storable(..))
+import           Graphics.FreetypeGL.RGBA (RGBA(..))
+import qualified Graphics.FreetypeGL.RGBA as RGBA
 import           Graphics.FreetypeGL.TextureFont (TextureFont(..))
 import qualified Graphics.FreetypeGL.TextureFont as TF
-
-data RGBA = RGBA Float Float Float Float
-    deriving (Eq, Ord, Read, Show)
 
 -- We intentionally omit the family,size,bold,italic fields which
 -- really don't belong in Markup, and are used to select a font. We
@@ -44,7 +43,7 @@ def =
     { spacing = 0.0
     , gamma = 1.0
     , foregroundColor = white
-    , backgroundColor = noColor
+    , backgroundColor = RGBA.noColor
     , outlineColor = Nothing
     , underlineColor = Nothing
     , overlineColor = Nothing
@@ -52,17 +51,6 @@ def =
     }
     where
         white = RGBA 1.0 1.0 1.0 1.0
-
-noColor :: RGBA
-noColor = RGBA 0.0 0.0 0.0 0.0
-
-rgbaToVec4 :: RGBA -> C'vec4
-rgbaToVec4 (RGBA r g b a) =
-    C'vec4
-    (realToFrac r)
-    (realToFrac g)
-    (realToFrac b)
-    (realToFrac a)
 
 withMarkupPtr :: Markup -> TextureFont -> (Ptr MU.C'markup_t -> IO a) -> IO a
 withMarkupPtr Markup{..} font@(TextureFont fontPtr) act =
@@ -76,8 +64,8 @@ withMarkupPtr Markup{..} font@(TextureFont fontPtr) act =
                 0 -- rise is ignored
                 (realToFrac spacing)
                 (realToFrac gamma)
-                (rgbaToVec4 foregroundColor)
-                (rgbaToVec4 backgroundColor)
+                (RGBA.toVec4 foregroundColor)
+                (RGBA.toVec4 backgroundColor)
                 & passColorAsCParams outlineColor
                 & passColorAsCParams underlineColor
                 & passColorAsCParams overlineColor
@@ -90,4 +78,4 @@ passColorAsCParams :: Maybe RGBA -> (CInt -> C'vec4 -> a) -> a
 passColorAsCParams mColor f =
     f
     ((fromIntegral . fromEnum . isJust) mColor)
-    (rgbaToVec4 (fromMaybe noColor mColor))
+    (RGBA.toVec4 (fromMaybe RGBA.noColor mColor))
