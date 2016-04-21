@@ -3,6 +3,7 @@
 module Graphics.FreetypeGL.Mat4
     ( Mat4(..), withMat4Ptr
     , identity, ortho
+    , fromList16
     ) where
 
 import qualified Bindings.FreetypeGL.Mat4 as M4
@@ -30,6 +31,11 @@ data Mat4 = Mat4
     , m33 :: !CFloat
     } deriving (Eq, Show)
 
+fromList16 :: [CFloat] -> Mat4
+fromList16 [m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33] =
+    Mat4 m00 m01 m02 m03 m10 m11 m12 m13 m20 m21 m22 m23 m30 m31 m32 m33
+fromList16 _ = error "fromList16: Expecting list of exactly 16 elements"
+
 identity :: Mat4
 identity =
     Mat4
@@ -54,10 +60,10 @@ ortho left right bottom top znear zfar =
     m30 m31 m32 1.0
     where
         m00 = realToFrac $ 2.0/(right-left)
-        m30 = realToFrac $ -(right+left)/(right-left)
         m11 = realToFrac $ 2.0/(top-bottom)
-        m31 = realToFrac $ -(top+bottom)/(top-bottom)
         m22 = realToFrac $ -2.0/(zfar-znear)
+        m30 = realToFrac $ -(right+left)/(right-left)
+        m31 = realToFrac $ -(top+bottom)/(top-bottom)
         m32 = realToFrac $ -(zfar+znear)/(zfar-znear)
 
 withMat4Ptr :: Mat4 -> (Ptr M4.C'mat4 -> IO a) -> IO a
