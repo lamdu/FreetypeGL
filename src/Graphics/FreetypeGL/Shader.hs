@@ -8,18 +8,24 @@ module Graphics.FreetypeGL.Shader
 
 import           Bindings.FreetypeGL.Paths (textShaderVertPath, textShaderFragPath)
 import qualified Bindings.FreetypeGL.Shader as Shader
+import           Control.Monad (forM_, unless)
 import           Foreign.C.String (withCString)
 import           Graphics.FreetypeGL.Mat4 (Mat4)
 import qualified Graphics.FreetypeGL.Mat4 as Mat4
+import           System.Directory (doesFileExist)
 
 newtype Shader = Shader Word
 
 -- TODO: Replace this, the C side crashes if the opens/reads fail!
 new :: FilePath -> FilePath -> IO Shader
 new vertPath fragPath =
-    withCString vertPath $ \cStrVertPath ->
-    withCString fragPath $ \cStrFragPath ->
-    Shader . fromIntegral <$> Shader.c'shader_load cStrVertPath cStrFragPath
+    do
+        forM_ [vertPath, fragPath] $ \path -> do
+            exists <- doesFileExist path
+            unless exists $ fail $ "Missing file: " ++ show path
+        withCString vertPath $ \cStrVertPath ->
+            withCString fragPath $ \cStrFragPath ->
+            Shader . fromIntegral <$> Shader.c'shader_load cStrVertPath cStrFragPath
 
 -- requires uniform bindings for model, view, projection
 newTextShader :: IO Shader
