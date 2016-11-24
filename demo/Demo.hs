@@ -86,7 +86,7 @@ withDistanceFieldTextBuffer act =
 
 mkAddText ::
     FilePath -> (String, TextBuffer) ->
-    IO ((String, Markup -> String -> StateT TextBuffer.Pen IO ()))
+    IO (String, Markup -> String -> StateT TextBuffer.Pen IO ())
 mkAddText ttfPath (annotation, textBuffer) =
     do
         manager <- TextBuffer.getFontManager textBuffer

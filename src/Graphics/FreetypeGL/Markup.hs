@@ -9,8 +9,7 @@ module Graphics.FreetypeGL.Markup
 import qualified Bindings.FreetypeGL.Markup as MU
 import           Bindings.FreetypeGL.Vec234 (C'vec4(..))
 import           Data.Function ((&))
-import           Data.Maybe (fromMaybe)
-import           Data.Maybe (isJust)
+import           Data.Maybe (fromMaybe, isJust)
 import           Foreign.C.Types (CInt)
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Ptr (Ptr, nullPtr)

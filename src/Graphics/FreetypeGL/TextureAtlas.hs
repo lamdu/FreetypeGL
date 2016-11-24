@@ -8,8 +8,7 @@ module Graphics.FreetypeGL.TextureAtlas
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.TextureAtlas as TA
-import           Foreign.C.Types (CInt(..))
-import           Foreign.C.Types (CSize(..))
+import           Foreign.C.Types (CInt(..), CSize(..))
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr)
 import           Foreign.Storable (Storable(..))
