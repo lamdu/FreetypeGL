@@ -1,8 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main (main) where
 
 import           Control.Exception (bracket_, bracket)
 import           Control.Monad (forM_, unless)
 import           Control.Monad.Trans.State (StateT(..), evalStateT)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Graphics.FreetypeGL.FontManager as FontManager
 import           Graphics.FreetypeGL.Init (initFreetypeGL)
 import           Graphics.FreetypeGL.Markup (Markup)
@@ -85,8 +90,8 @@ withDistanceFieldTextBuffer act =
                 act shader textBuffer
 
 mkAddText ::
-    FilePath -> (String, TextBuffer) ->
-    IO (String, Markup -> String -> StateT TextBuffer.Pen IO ())
+    FilePath -> (Text, TextBuffer) ->
+    IO (Text, Markup -> Text -> StateT TextBuffer.Pen IO ())
 mkAddText ttfPath (annotation, textBuffer) =
     do
         manager <- TextBuffer.getFontManager textBuffer
@@ -118,11 +123,11 @@ main =
                             (`evalStateT` TextBuffer.Pen 0 yres) $
                                 forM_ addTexts $ \(annotation, addText) ->
                                 do
-                                    addText Markup.def (annotation ++ "\n")
+                                    addText Markup.def (annotation <> "\n")
                                     forM_ [2.5,2..1] $ \g ->
                                         do
                                             let text = addText Markup.def { Markup.gamma = g }
-                                            text $ "Gamma = " ++ show g ++ "!\n"
+                                            text $ "Gamma = " <> Text.pack (show g) <> "!\n"
                                             text "0123456789ABCDEF abcdef\n\n"
                             loop win
                                 [(shader, normTextBuffer), (shader, lcdTextBuffer)]

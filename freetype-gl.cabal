@@ -1,5 +1,5 @@
 name:                freetype-gl
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            Initial project template from stack
 description:         Please see README.md
 homepage:            https://github.com/Peaker/freetype-gl#readme
@@ -29,6 +29,7 @@ library
                      , bindings-freetype-gl == 0.1.*
                      , bytestring >= 0.9
                      , directory >= 1.2.2.0
+                     , text >= 1.2
                      , transformers >= 0.4.2.0
   default-language:    Haskell2010
 
@@ -40,6 +41,7 @@ executable freetype-gl-demo
                      , OpenGL >= 3.0.0
                      , base
                      , freetype-gl
+                     , text
                      , transformers >= 0.4.2.0
   default-language:    Haskell2010
 

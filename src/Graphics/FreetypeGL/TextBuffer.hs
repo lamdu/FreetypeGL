@@ -17,8 +17,8 @@ module Graphics.FreetypeGL.TextBuffer
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
 import           Control.Monad.Trans.State (StateT(..))
-import           Data.List (genericLength)
-import           Foreign.C.String (withCString)
+import           Data.Text (Text)
+import           Data.Text.Foreign as TextForeign
 import           Foreign.C.Types (CUInt)
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Error (throwIfNull)
@@ -66,12 +66,12 @@ withPen act = StateT $ \oldPen ->
         newPen <- penOfVec <$> peek penPtr
         return (res, newPen)
 
-addText :: TextBuffer -> Markup -> TextureFont -> String -> StateT Pen IO ()
-addText (TextBuffer ptr) markup font str =
+addText :: TextBuffer -> Markup -> TextureFont -> Text -> StateT Pen IO ()
+addText (TextBuffer ptr) markup font text =
     withPen $ \penPtr ->
     MU.withMarkupPtr markup font $ \markupPtr ->
-    withCString str $ \cStr ->
-    TB.c'text_buffer_add_text ptr penPtr markupPtr cStr (genericLength str)
+    TextForeign.withCStringLen text $ \(charsUtf8, len) ->
+    TB.c'text_buffer_add_text ptr penPtr markupPtr charsUtf8 (fromIntegral len)
 
 clear :: TextBuffer -> IO ()
 clear (TextBuffer ptr) = TB.c'text_buffer_clear ptr
