@@ -73,8 +73,9 @@ addText (TextBuffer ptr) markup font text
     | otherwise =
         withPen $ \penPtr ->
         MU.withMarkupPtr markup font $ \markupPtr ->
-        TextForeign.withCStringLen text $ \(charsUtf8, len) ->
-        TB.c'text_buffer_add_text ptr penPtr markupPtr charsUtf8 (fromIntegral len)
+        TextForeign.withCStringLen text $ \(charsUtf8, _byteLen) ->
+        TB.c'text_buffer_add_text ptr penPtr markupPtr charsUtf8
+        (fromIntegral (Text.length text))
 
 clear :: TextBuffer -> IO ()
 clear (TextBuffer ptr) = TB.c'text_buffer_clear ptr
