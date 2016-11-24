@@ -18,6 +18,7 @@ import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
 import           Control.Monad.Trans.State (StateT(..))
 import           Data.Text (Text)
+import qualified Data.Text as Text
 import           Data.Text.Foreign as TextForeign
 import           Foreign.C.Types (CUInt)
 import           Foreign.Marshal.Alloc (alloca)
@@ -67,11 +68,13 @@ withPen act = StateT $ \oldPen ->
         return (res, newPen)
 
 addText :: TextBuffer -> Markup -> TextureFont -> Text -> StateT Pen IO ()
-addText (TextBuffer ptr) markup font text =
-    withPen $ \penPtr ->
-    MU.withMarkupPtr markup font $ \markupPtr ->
-    TextForeign.withCStringLen text $ \(charsUtf8, len) ->
-    TB.c'text_buffer_add_text ptr penPtr markupPtr charsUtf8 (fromIntegral len)
+addText (TextBuffer ptr) markup font text
+    | Text.null text = return ()
+    | otherwise =
+        withPen $ \penPtr ->
+        MU.withMarkupPtr markup font $ \markupPtr ->
+        TextForeign.withCStringLen text $ \(charsUtf8, len) ->
+        TB.c'text_buffer_add_text ptr penPtr markupPtr charsUtf8 (fromIntegral len)
 
 clear :: TextBuffer -> IO ()
 clear (TextBuffer ptr) = TB.c'text_buffer_clear ptr
