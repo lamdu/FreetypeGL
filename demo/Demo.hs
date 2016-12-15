@@ -50,20 +50,17 @@ loop win textPairs (dfShader, dfTextBuffer) =
                         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
                         GL.blend $= GL.Enabled
                         GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
+                        let uniforms =
+                                Shader.TextShaderUniforms
+                                { Shader.textShaderModel = Mat4.identity
+                                , Shader.textShaderView = Mat4.identity
+                                , Shader.textShaderProjection = Mat4.ortho 0 xres 0 yres (-1) 1
+                                }
                         forM_ textPairs $ \(shader, textBuffer) ->
                             do
-                                Shader.bindTextShaderUniforms shader Shader.TextShaderUniforms
-                                    { Shader.textShaderModel = Mat4.identity
-                                    , Shader.textShaderView = Mat4.identity
-                                    , Shader.textShaderProjection = Mat4.ortho 0 xres 0 yres (-1) 1
-                                    }
+                                Shader.bindTextShaderUniforms shader uniforms
                                 TextBuffer.render textBuffer
-                        Shader.bindDistanceFieldShaderUniforms dfShader Shader.DistanceFieldShaderUniforms
-                            { Shader.distanceFieldColor = RGBA 1 1 1 1
-                            , Shader.distanceFieldShaderModel = Mat4.identity
-                            , Shader.distanceFieldShaderView = Mat4.identity
-                            , Shader.distanceFieldShaderProjection = Mat4.ortho 0 xres 0 yres (-1) 1
-                            }
+                        Shader.bindTextShaderUniforms dfShader uniforms
                         TextBuffer.render dfTextBuffer
                         GLFW.swapBuffers win
                         GLFW.pollEvents

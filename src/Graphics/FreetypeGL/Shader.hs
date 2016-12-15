@@ -4,7 +4,6 @@ module Graphics.FreetypeGL.Shader
     ( Shader(..), new
     , newTextShader, newDistanceFieldShader
     , TextShaderUniforms(..), bindTextShaderUniforms
-    , DistanceFieldShaderUniforms(..), bindDistanceFieldShaderUniforms
     ) where
 
 import qualified Bindings.FreetypeGL.Paths as Paths
@@ -43,13 +42,6 @@ newTextShader =
         f <- Paths.textShaderFrag
         new v f
 
-data DistanceFieldShaderUniforms = DistanceFieldShaderUniforms
-    { distanceFieldShaderModel :: !Mat4
-    , distanceFieldShaderView :: !Mat4
-    , distanceFieldShaderProjection :: !Mat4
-    , distanceFieldColor :: !RGBA
-    }
-
 newDistanceFieldShader :: IO Shader
 newDistanceFieldShader =
     do
@@ -63,14 +55,3 @@ bindTextShaderUniforms (Shader shader) uniforms =
     Mat4.withMat4Ptr (textShaderView uniforms) $ \view ->
     Mat4.withMat4Ptr (textShaderProjection uniforms) $ \projection ->
     Shader.c'wrapper__bind_text_shader_uniforms (fromIntegral shader) model view projection
-
-bindDistanceFieldShaderUniforms :: Shader -> DistanceFieldShaderUniforms -> IO ()
-bindDistanceFieldShaderUniforms (Shader shader) uniforms =
-    Mat4.withMat4Ptr (distanceFieldShaderModel uniforms) $ \model ->
-    Mat4.withMat4Ptr (distanceFieldShaderView uniforms) $ \view ->
-    Mat4.withMat4Ptr (distanceFieldShaderProjection uniforms) $ \projection ->
-    RGBA.withVec (distanceFieldColor uniforms) $ \color ->
-    Shader.c'wrapper__bind_distance_field_shader_uniforms
-    shaderId color model view projection
-    where
-        shaderId = fromIntegral shader
