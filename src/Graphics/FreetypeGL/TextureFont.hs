@@ -2,7 +2,7 @@
 
 module Graphics.FreetypeGL.TextureFont
     ( TextureFont(..), newFromFile, newFromMemory, delete
-    , PtSize, size, atlas
+    , PtSize, size
     , height, lineGap, ascender, descender, underlinePosition, underlineThickness
     ) where
 
@@ -13,25 +13,27 @@ import           Foreign.C.String (withCString)
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr, castPtr)
 import           Foreign.Storable (peek)
-import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas(..))
+import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas)
+import qualified Graphics.FreetypeGL.TextureAtlas as TextureAtlas
 
 data TextureFont = TextureFont (Ptr TF.C'texture_font_t)
 
 type PtSize = Float
 
 newFromFile :: TextureAtlas -> PtSize -> FilePath -> IO TextureFont
-newFromFile (TextureAtlas atlas_) size_ path =
+newFromFile atlas size_ path =
     withCString path $ \cPath ->
     TextureFont
     <$> throwIfNull "texture_font_new_from_file failed"
-        ( TF.c'texture_font_new_from_file atlas_ (realToFrac size_) cPath )
+        ( TF.c'texture_font_new_from_file (TextureAtlas.ptr atlas)
+          (realToFrac size_) cPath )
 
 newFromMemory :: TextureAtlas -> PtSize -> ByteString -> IO TextureFont
-newFromMemory (TextureAtlas atlas_) size_ mem =
+newFromMemory atlas size_ mem =
     BS.useAsCStringLen mem $ \(cStr, len) ->
     TextureFont
     <$> throwIfNull "texture_font_new_from_memory failed"
-        ( TF.c'texture_font_new_from_memory atlas_
+        ( TF.c'texture_font_new_from_memory (TextureAtlas.ptr atlas)
           (realToFrac size_) (castPtr cStr) (fromIntegral len) )
 
 delete :: TextureFont -> IO ()
@@ -57,6 +59,3 @@ underlineThickness (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'
 
 size :: TextureFont -> IO PtSize
 size (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'size ptr)
-
-atlas :: TextureFont -> IO TextureAtlas
-atlas (TextureFont ptr) = TextureAtlas <$> peek (TF.p'texture_font_t'atlas ptr)

@@ -7,13 +7,15 @@ module Graphics.FreetypeGL.TextBuffer
     , clear
     , addText
     , Align(..), align
-    , render
+    , RenderParams(..), render
     , BoundingBox(..)
     , boundingBox
     ) where
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
+import qualified Bindings.FreetypeGL.TextureAtlas as TA
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
+import qualified Bindings.FreetypeGL.VertexBuffer as VB
 import           Control.Monad.Trans.State (StateT(..))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -25,7 +27,11 @@ import           Foreign.Ptr (Ptr)
 import           Foreign.Storable (Storable(..))
 import           Graphics.FreetypeGL.Markup (Markup(..))
 import qualified Graphics.FreetypeGL.Markup as MU
+import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas)
+import qualified Graphics.FreetypeGL.TextureAtlas as TextureAtlas
 import           Graphics.FreetypeGL.TextureFont (TextureFont(..))
+import           Graphics.Rendering.OpenGL (($=))
+import qualified Graphics.Rendering.OpenGL as GL
 
 data Pen = Pen { penX :: !Float, penY :: !Float }
     deriving (Eq, Ord, Read, Show)
@@ -96,5 +102,39 @@ boundingBox (TextBuffer ptr) =
     where
         f = realToFrac
 
-render :: TextBuffer -> IO ()
-render (TextBuffer ptr) = TB.c'text_buffer_render ptr
+data RenderParams = RenderParams
+    { renderShader :: GL.Program
+    , renderShaderTex :: GL.UniformLocation
+      -- ^ The uniform location of the conventionally called "tex" uniform
+      -- of type Texture unit, which the shader uses to access the atlas
+    , renderShaderPixel :: GL.UniformLocation
+      -- ^ The uniform location of the conventionally called "pixel" uniform
+      -- of type vec3, which the shader uses as the atlas geometry
+    }
+
+-- | This is not exposed by OpenGL package :-(
+glTriangles :: VB.C'GLenum
+glTriangles = 4
+
+-- | The given program's "tex" and "pixel" uniforms are bound
+-- here. Other uniforms must be bound by the caller
+render :: RenderParams -> TextureAtlas -> TextBuffer -> IO ()
+render params atlas (TextBuffer ptr) =
+    do
+        GL.currentProgram $= Just (renderShader params)
+        GL.uniform (renderShaderTex params) $= GL.TextureUnit 0
+        TA.C'texture_atlas_t width height depth _ _ _ <-
+            peek (TextureAtlas.ptr atlas)
+        let invWidth = (1/fromIntegral width)
+        let invHeight = (1/fromIntegral height)
+        GL.uniform (renderShaderPixel params) $=
+            GL.Vector3 invWidth invHeight (fromIntegral depth :: Double)
+
+        GL.blend $= GL.Enabled
+        GL.activeTexture $= GL.TextureUnit 0
+        GL.textureBinding GL.Texture2D $= Just (TextureAtlas.glTexture atlas)
+        GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
+        GL.blendColor $= GL.Color4 1 1 1 1
+        buffer <- peek (TB.p'text_buffer_t'buffer ptr)
+        VB.c'vertex_buffer_print buffer
+        VB.c'vertex_buffer_render buffer glTriangles

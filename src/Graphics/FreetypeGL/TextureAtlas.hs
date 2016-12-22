@@ -44,13 +44,13 @@ new width height depth =
     <*> GL.genObjectName
 
 upload :: TextureAtlas -> IO ()
-upload (TextureAtlas ptr texture) =
+upload (TextureAtlas atlasPtr texture) =
     do
         GL.textureBinding GL.Texture2D $= Just texture
         GL.textureWrapMode GL.Texture2D GL.S $= (GL.Repeated, GL.ClampToEdge)
         GL.textureWrapMode GL.Texture2D GL.T $= (GL.Repeated, GL.ClampToEdge)
         GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Linear')
-        TA.C'texture_atlas_t width height depth _ _ dataPtr <- peek ptr
+        TA.C'texture_atlas_t width height depth _ _ dataPtr <- peek atlasPtr
         let size = GL.TextureSize2D (fromIntegral width) (fromIntegral height)
         let format
                 | depth == 1 = GL.R8

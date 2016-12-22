@@ -16,8 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     Graphics.FreetypeGL.FontManager
-                     , Graphics.FreetypeGL.Init
+  exposed-modules:     Graphics.FreetypeGL.Init
                      , Graphics.FreetypeGL.Markup
                      , Graphics.FreetypeGL.RGBA
                      , Graphics.FreetypeGL.TextBuffer
