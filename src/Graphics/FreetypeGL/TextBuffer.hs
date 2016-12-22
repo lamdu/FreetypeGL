@@ -128,7 +128,7 @@ render params atlas (TextBuffer ptr) =
         let invWidth = (1/fromIntegral width)
         let invHeight = (1/fromIntegral height)
         GL.uniform (renderShaderPixel params) $=
-            GL.Vector3 invWidth invHeight (fromIntegral depth :: Double)
+            GL.Vector3 invWidth invHeight (fromIntegral depth :: Float)
 
         GL.blend $= GL.Enabled
         GL.activeTexture $= GL.TextureUnit 0
@@ -136,5 +136,4 @@ render params atlas (TextBuffer ptr) =
         GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
         GL.blendColor $= GL.Color4 1 1 1 1
         buffer <- peek (TB.p'text_buffer_t'buffer ptr)
-        VB.c'vertex_buffer_print buffer
         VB.c'vertex_buffer_render buffer glTriangles

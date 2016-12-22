@@ -31,12 +31,6 @@ assert :: String -> Bool -> IO ()
 assert _ True = return ()
 assert msg False = fail msg
 
-xres :: Num a => a
-xres = 320
-
-yres :: Num a => a
-yres = 800
-
 getUniformLocation :: GL.Program -> String -> IO GL.UniformLocation
 getUniformLocation program name =
     do
@@ -51,21 +45,10 @@ setUniform program name val =
         location <- getUniformLocation program name
         GL.uniform location $= val
 
-ortho1 ::
-    GL.GLdouble -> GL.GLdouble -> GL.GLdouble -> GL.GLdouble ->
-    GL.GLdouble -> GL.GLdouble -> IO (GL.GLmatrix GL.GLdouble)
-ortho1 left right bottom top near far =
-    GL.newMatrix GL.ColumnMajor
-    [ 2/(right-left), 0, 0, -(right+left)/(right-left)
-    , 0, 2/(top-bottom), 0, -(top+bottom)/(top-bottom)
-    , 0, 0, -2/(far-near), -(far+near)/(far-near)
-    , 0, 0, 0, 1
-    ]
-
-ortho2 ::
-    GL.GLdouble -> GL.GLdouble -> GL.GLdouble -> GL.GLdouble ->
-    GL.GLdouble -> GL.GLdouble -> IO (GL.GLmatrix GL.GLdouble)
-ortho2 left right bottom top near far =
+ortho ::
+    GL.GLfloat -> GL.GLfloat -> GL.GLfloat -> GL.GLfloat ->
+    GL.GLfloat -> GL.GLfloat -> IO (GL.GLmatrix GL.GLfloat)
+ortho left right bottom top near far =
     GL.newMatrix GL.ColumnMajor
     [ 2/(right-left), 0, 0, 0
     , 0, 2/(top-bottom), 0, 0
@@ -73,7 +56,7 @@ ortho2 left right bottom top near far =
     , -(right+left)/(right-left), -(top+bottom)/(top-bottom), -(far+near)/(far-near), 1
     ]
 
-ident :: IO (GL.GLmatrix GL.GLdouble)
+ident :: IO (GL.GLmatrix GL.GLfloat)
 ident =
     GL.newMatrix GL.ColumnMajor
     [ 1, 0, 0, 0
@@ -132,22 +115,14 @@ loop win tuples =
                         GL.blend $= GL.Enabled
                         GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
 
-                        -- shtut
-                        GL.currentProgram $= Nothing
-                        GL.matrixMode $= GL.Projection
-                        GL.loadIdentity
-                        GL.ortho 0 xres 0 yres (-1) 1
-                        GL.color (GL.Color4 (1 :: GL.GLfloat) 0 0 1)
-                        GL.renderPrimitive GL.Lines $ do
-                            GL.vertex (GL.Vertex3 (0::Double) 0 0)
-                            GL.vertex (GL.Vertex3 (100::Double) 100 0)
-                        GL.loadIdentity
+                        (xres, yres) <- GLFW.getFramebufferSize win
 
                         identMat <- ident
                         orthoMat <-
-                            (if even i then ortho1 else ortho2) 0 xres 0 yres (-1) 1
+                            ortho 0 (fromIntegral xres) 0 (fromIntegral yres) (-1) 1
                         forM_ tuples $ \(shader, atlas, textBuffer) ->
                             do
+                                TextureAtlas.upload atlas
                                 GL.currentProgram $= Just shader
                                 setUniform shader "model" identMat
                                 setUniform shader "view" identMat
@@ -173,27 +148,28 @@ main :: IO ()
 main =
     do
         [ttfPath] <- getArgs
-        atlas <- TextureAtlas.new 512 512 TextureAtlas.LCD_FILTERING_OFF
-        lcdAtlas <- TextureAtlas.new 512 512 TextureAtlas.LCD_FILTERING_ON
-        normFont <- TextureFont.newFromFile atlas 16 ttfPath
-        lcdFont <- TextureFont.newFromFile lcdAtlas 16 ttfPath
         bracket_ (GLFW.init >>= assert "GLFW.init failed") GLFW.terminate $
             do
-                Just win <- GLFW.createWindow xres yres "freetype-gl-demo" Nothing Nothing
+                Just win <- GLFW.createWindow 320 800 "freetype-gl-demo" Nothing Nothing
                 GLFW.makeContextCurrent $ Just win
+                atlas <- TextureAtlas.new 512 512 TextureAtlas.LCD_FILTERING_OFF
+                lcdAtlas <- TextureAtlas.new 512 512 TextureAtlas.LCD_FILTERING_ON
+                normFont <- TextureFont.newFromFile atlas 16 ttfPath
+                lcdFont <- TextureFont.newFromFile lcdAtlas 16 ttfPath
                 shader <-
                     join $ loadProgram <$> Paths.textShaderVert <*> Paths.textShaderFrag
-                -- dfShader <-
-                --     join $
-                --     loadProgram
-                --     <$> Paths.textDistanceFieldShaderVert
-                --     <*> Paths.textDistanceFieldShaderFrag
+                dfShader <-
+                    join $
+                    loadProgram
+                    <$> Paths.textDistanceFieldShaderVert
+                    <*> Paths.textDistanceFieldShaderFrag
                 GLFW.swapInterval 1
                 initFreetypeGL
-                GL.viewport $= (GL.Position 0 0, GL.Size xres yres)
+                (xres, yres) <- GLFW.getFramebufferSize win
+                GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral xres) (fromIntegral yres))
                 withTextBuffer $ \normTextBuffer ->
                     withTextBuffer $ \lcdTextBuffer ->
-                    -- withTextBuffer $ \dfTextBuffer ->
+                    withTextBuffer $ \dfTextBuffer ->
                         do
                             let mkAddText font buf markup =
                                     TextBuffer.addText buf markup font
@@ -202,7 +178,7 @@ main =
                                     -- , ("DF", mkAddText normFont dfTextBuffer)
                                     , ("LCD", mkAddText lcdFont lcdTextBuffer)
                                     ]
-                            (`evalStateT` TextBuffer.Pen 0 yres) $
+                            (`evalStateT` TextBuffer.Pen 0 (fromIntegral 800)) $
                                 forM_ addTexts $ \(annotation, addText) ->
                                 do
                                     addText Markup.def (annotation <> "\n")
