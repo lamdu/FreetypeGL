@@ -19,13 +19,12 @@ library
   exposed-modules:     Graphics.FreetypeGL.FontManager
                      , Graphics.FreetypeGL.Init
                      , Graphics.FreetypeGL.Markup
-                     , Graphics.FreetypeGL.Mat4
                      , Graphics.FreetypeGL.RGBA
-                     , Graphics.FreetypeGL.Shader
                      , Graphics.FreetypeGL.TextBuffer
                      , Graphics.FreetypeGL.TextureFont
                      , Graphics.FreetypeGL.TextureAtlas
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       OpenGL >= 3.0.0
+                     , base >= 4.7 && < 5
                      , bindings-freetype-gl == 0.1.*
                      , bytestring >= 0.9
                      , directory >= 1.2.2.0
@@ -38,8 +37,10 @@ executable freetype-gl-demo
   main-is:             Demo.hs
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:       GLFW-b == 1.4.*
-                     , OpenGL >= 3.0.0
+                     , OpenGL
                      , base
+                     , bindings-freetype-gl
+                     , bytestring
                      , freetype-gl
                      , text
                      , transformers >= 0.4.2.0

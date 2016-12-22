@@ -3,26 +3,34 @@ module Graphics.FreetypeGL.TextureAtlas
     , RenderDepth(..), c'renderDepth
     , new, delete
     , upload
-    , Mode(..), setMode, getMode
     ) where
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.TextureAtlas as TA
-import           Foreign.C.Types (CInt(..), CSize(..))
+import           Foreign.C.Types (CSize(..))
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr)
-import           Foreign.Storable (Storable(..))
+import           Foreign.Storable (peek)
+import           Graphics.Rendering.OpenGL (($=))
+import qualified Graphics.Rendering.OpenGL as GL
 
 data RenderDepth = LCD_FILTERING_ON | LCD_FILTERING_OFF
 
-data TextureAtlas = TextureAtlas (Ptr TA.C'texture_atlas_t)
+data TextureAtlas =
+    TextureAtlas
+    { ptr :: Ptr TA.C'texture_atlas_t
+    , glTexture :: GL.TextureObject
+    }
 
 c'renderDepth :: RenderDepth -> CSize
 c'renderDepth LCD_FILTERING_ON = TB.c'LCD_FILTERING_ON
 c'renderDepth LCD_FILTERING_OFF = TB.c'LCD_FILTERING_OFF
 
 delete :: TextureAtlas -> IO ()
-delete (TextureAtlas ptr) = TA.c'texture_atlas_delete ptr
+delete (TextureAtlas p t) =
+    do
+        TA.c'texture_atlas_delete p
+        GL.deleteObjectName t
 
 new
     :: Word -- ^ width
@@ -33,26 +41,22 @@ new width height depth =
     <$> throwIfNull "texture_atlas_new failed"
         ( TA.c'texture_atlas_new
           (fromIntegral width) (fromIntegral height) (c'renderDepth depth) )
+    <*> GL.genObjectName
 
 upload :: TextureAtlas -> IO ()
-upload (TextureAtlas ptr) = TA.c'texture_atlas_upload ptr
-
-data Mode
-    = Normal
-    | DistanceField
-    deriving (Eq, Ord, Read, Show)
-
-modeToCInt :: Mode -> CInt
-modeToCInt Normal = 0
-modeToCInt DistanceField = 1
-
-modeFromCInt :: CInt -> Mode
-modeFromCInt 0 = Normal
-modeFromCInt 1 = DistanceField
-modeFromCInt _ = error "Invalid mode in TextureAtlas"
-
-getMode :: TextureAtlas -> IO Mode
-getMode (TextureAtlas ptr) = modeFromCInt <$> peek (TA.p'texture_atlas_t'p_distance_field ptr)
-
-setMode :: TextureAtlas -> Mode -> IO ()
-setMode (TextureAtlas ptr) mode = poke (TA.p'texture_atlas_t'p_distance_field ptr) (modeToCInt mode)
+upload (TextureAtlas ptr texture) =
+    do
+        GL.textureBinding GL.Texture2D $= Just texture
+        GL.textureWrapMode GL.Texture2D GL.S $= (GL.Repeated, GL.ClampToEdge)
+        GL.textureWrapMode GL.Texture2D GL.T $= (GL.Repeated, GL.ClampToEdge)
+        GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Linear')
+        TA.C'texture_atlas_t width height depth _ _ dataPtr <- peek ptr
+        let size = GL.TextureSize2D (fromIntegral width) (fromIntegral height)
+        let format
+                | depth == 1 = GL.R8
+                | otherwise = GL.RGB8
+        let pixelFormat
+                | depth == 1 = GL.Red
+                | otherwise = GL.RGB
+        let pixelData = GL.PixelData pixelFormat GL.UnsignedByte dataPtr
+        GL.texImage2D GL.Texture2D GL.NoProxy 0 format size 0 pixelData

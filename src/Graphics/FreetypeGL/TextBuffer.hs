@@ -3,8 +3,6 @@
 module Graphics.FreetypeGL.TextBuffer
     ( TextBuffer
     , new, delete
-    , getFontManager
-    , RenderDepth(..)
     , Pen(..)
     , clear
     , addText
@@ -25,11 +23,8 @@ import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr)
 import           Foreign.Storable (Storable(..))
-import           Graphics.FreetypeGL.FontManager (FontManager(..))
 import           Graphics.FreetypeGL.Markup (Markup(..))
 import qualified Graphics.FreetypeGL.Markup as MU
-import           Graphics.FreetypeGL.Shader (Shader(..))
-import           Graphics.FreetypeGL.TextureAtlas (RenderDepth(..), c'renderDepth)
 import           Graphics.FreetypeGL.TextureFont (TextureFont(..))
 
 data Pen = Pen { penX :: !Float, penY :: !Float }
@@ -43,17 +38,8 @@ vecOfPen (Pen x y) = Vec234.C'vec2 (realToFrac x) (realToFrac y)
 
 newtype TextBuffer = TextBuffer (Ptr TB.C'text_buffer_t)
 
-getFontManager :: TextBuffer -> IO FontManager
-getFontManager (TextBuffer ptr) = FontManager <$> peek (TB.p'text_buffer_t'manager ptr)
-
-new :: RenderDepth -> Shader -> IO TextBuffer
-new renderDepth (Shader program) =
-    TextBuffer
-    <$> throwIfNull "text_buffer_new failed"
-        ( TB.c'text_buffer_new_with_program
-          (c'renderDepth renderDepth)
-          (fromIntegral program)
-        )
+new :: IO TextBuffer
+new = TextBuffer <$> throwIfNull "text_buffer_new failed" TB.c'text_buffer_new
 
 delete :: TextBuffer -> IO ()
 delete (TextBuffer ptr) = TB.c'text_buffer_delete ptr
