@@ -3,8 +3,6 @@
 module Graphics.FreetypeGL.TextBuffer
     ( TextBuffer
     , new, delete
-    , getFontManager
-    , RenderDepth(..)
     , Pen(..)
     , clear
     , addText
@@ -15,7 +13,9 @@ module Graphics.FreetypeGL.TextBuffer
     ) where
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
+import qualified Bindings.FreetypeGL.TextureAtlas as TA
 import qualified Bindings.FreetypeGL.Vec234 as Vec234
+import qualified Bindings.FreetypeGL.VertexBuffer as VB
 import           Control.Monad.Trans.State (StateT(..))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -25,12 +25,14 @@ import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr)
 import           Foreign.Storable (Storable(..))
-import           Graphics.FreetypeGL.FontManager (FontManager(..))
 import           Graphics.FreetypeGL.Markup (Markup(..))
 import qualified Graphics.FreetypeGL.Markup as MU
-import           Graphics.FreetypeGL.Shader (Shader(..))
-import           Graphics.FreetypeGL.TextureAtlas (RenderDepth(..), c'renderDepth)
+import           Graphics.FreetypeGL.Shaders (TextShaderProgram(..), TextShaderUniforms(..))
+import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas)
+import qualified Graphics.FreetypeGL.TextureAtlas as TextureAtlas
 import           Graphics.FreetypeGL.TextureFont (TextureFont(..))
+import           Graphics.Rendering.OpenGL (($=))
+import qualified Graphics.Rendering.OpenGL as GL
 
 data Pen = Pen { penX :: !Float, penY :: !Float }
     deriving (Eq, Ord, Read, Show)
@@ -43,17 +45,8 @@ vecOfPen (Pen x y) = Vec234.C'vec2 (realToFrac x) (realToFrac y)
 
 newtype TextBuffer = TextBuffer (Ptr TB.C'text_buffer_t)
 
-getFontManager :: TextBuffer -> IO FontManager
-getFontManager (TextBuffer ptr) = FontManager <$> peek (TB.p'text_buffer_t'manager ptr)
-
-new :: RenderDepth -> Shader -> IO TextBuffer
-new renderDepth (Shader program) =
-    TextBuffer
-    <$> throwIfNull "text_buffer_new failed"
-        ( TB.c'text_buffer_new_with_program
-          (c'renderDepth renderDepth)
-          (fromIntegral program)
-        )
+new :: IO TextBuffer
+new = TextBuffer <$> throwIfNull "text_buffer_new failed" TB.c'text_buffer_new
 
 delete :: TextBuffer -> IO ()
 delete (TextBuffer ptr) = TB.c'text_buffer_delete ptr
@@ -110,5 +103,33 @@ boundingBox (TextBuffer ptr) =
     where
         f = realToFrac
 
-render :: TextBuffer -> IO ()
-render (TextBuffer ptr) = TB.c'text_buffer_render ptr
+-- | This is not exposed by OpenGL package :-(
+glTriangles :: VB.C'GLenum
+glTriangles = 4
+
+-- | The given program's "tex" and "pixel" uniforms are bound
+-- here. Other uniforms must be bound by the caller
+render :: TextShaderProgram -> TextureAtlas -> TextBuffer -> IO ()
+render (TextShaderProgram prog uniforms) atlas (TextBuffer ptr) =
+    do
+        GL.currentProgram $= Just prog
+        GL.uniform (uniformTexture uniforms) $= GL.TextureUnit 0
+        TA.C'texture_atlas_t width height depth _ _ _ <-
+            peek (TextureAtlas.ptr atlas)
+        let invWidth = (1/fromIntegral width)
+        let invHeight = (1/fromIntegral height)
+        case uniformMPixel uniforms of
+            Nothing -> return ()
+            Just pixel ->
+                GL.uniform pixel $=
+                    GL.Vector3 invWidth invHeight (fromIntegral depth :: Float)
+        case uniformMColor uniforms of
+            Nothing -> return ()
+            Just color -> GL.uniform color $= GL.Vector4 1 1 1 (1 :: Float)
+        GL.blend $= GL.Enabled
+        GL.activeTexture $= GL.TextureUnit 0
+        GL.textureBinding GL.Texture2D $= Just (TextureAtlas.glTexture atlas)
+        GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
+        GL.blendColor $= GL.Color4 1 1 1 1
+        buffer <- peek (TB.p'text_buffer_t'buffer ptr)
+        VB.c'vertex_buffer_render buffer glTriangles

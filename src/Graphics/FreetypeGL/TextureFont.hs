@@ -2,7 +2,7 @@
 
 module Graphics.FreetypeGL.TextureFont
     ( TextureFont(..), newFromFile, newFromMemory, delete
-    , PtSize, size, atlas
+    , RenderMode(..), PtSize, size, OutlineThickness
     , height, lineGap, ascender, descender, underlinePosition, underlineThickness
     ) where
 
@@ -12,27 +12,60 @@ import qualified Data.ByteString as BS
 import           Foreign.C.String (withCString)
 import           Foreign.Marshal.Error (throwIfNull)
 import           Foreign.Ptr (Ptr, castPtr)
-import           Foreign.Storable (peek)
-import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas(..))
+import           Foreign.Storable (peek, poke)
+import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas)
+import qualified Graphics.FreetypeGL.TextureAtlas as TextureAtlas
 
 data TextureFont = TextureFont (Ptr TF.C'texture_font_t)
 
 type PtSize = Float
+type OutlineThickness = Float
 
-newFromFile :: TextureAtlas -> PtSize -> FilePath -> IO TextureFont
-newFromFile (TextureAtlas atlas_) size_ path =
+data RenderMode
+    = RenderNormal
+    | RenderOutlineEdge OutlineThickness
+    | RenderOutlinePositive OutlineThickness
+    | RenderOutlineNegative OutlineThickness
+    | RenderSignedDistanceField
+
+c'renderMode :: RenderMode -> (TF.C'rendermode_t, OutlineThickness)
+c'renderMode RenderNormal = (TF.c'RENDER_NORMAL, 0)
+c'renderMode (RenderOutlineEdge x) = (TF.c'RENDER_OUTLINE_EDGE, x)
+c'renderMode (RenderOutlinePositive x) = (TF.c'RENDER_OUTLINE_POSITIVE, x)
+c'renderMode (RenderOutlineNegative x) = (TF.c'RENDER_OUTLINE_NEGATIVE, x)
+c'renderMode RenderSignedDistanceField = (TF.c'RENDER_SIGNED_DISTANCE_FIELD, 0)
+
+setRenderMode :: RenderMode -> Ptr TF.C'texture_font_t -> IO ()
+setRenderMode mode ptr =
+    do
+        poke (TF.p'texture_font_t'rendermode ptr) cRenderMode
+        poke (TF.p'texture_font_t'outline_thickness ptr) (realToFrac outline)
+    where
+        (cRenderMode, outline) = c'renderMode mode
+
+newFromFile :: TextureAtlas -> PtSize -> RenderMode -> FilePath -> IO TextureFont
+newFromFile atlas size_ mode path =
     withCString path $ \cPath ->
-    TextureFont
-    <$> throwIfNull "texture_font_new_from_file failed"
-        ( TF.c'texture_font_new_from_file atlas_ (realToFrac size_) cPath )
+    TextureFont <$>
+    do
+        font <-
+            throwIfNull "texture_font_new_from_file failed" $
+            TF.c'texture_font_new_from_file (TextureAtlas.ptr atlas)
+            (realToFrac size_) cPath
+        setRenderMode mode font
+        return font
 
-newFromMemory :: TextureAtlas -> PtSize -> ByteString -> IO TextureFont
-newFromMemory (TextureAtlas atlas_) size_ mem =
+newFromMemory :: TextureAtlas -> PtSize -> RenderMode -> ByteString -> IO TextureFont
+newFromMemory atlas size_ mode mem =
     BS.useAsCStringLen mem $ \(cStr, len) ->
-    TextureFont
-    <$> throwIfNull "texture_font_new_from_memory failed"
-        ( TF.c'texture_font_new_from_memory atlas_
-          (realToFrac size_) (castPtr cStr) (fromIntegral len) )
+    TextureFont <$>
+    do
+        font <-
+            throwIfNull "texture_font_new_from_memory failed" $
+            TF.c'texture_font_new_from_memory (TextureAtlas.ptr atlas)
+            (realToFrac size_) (castPtr cStr) (fromIntegral len)
+        setRenderMode mode font
+        return font
 
 delete :: TextureFont -> IO ()
 delete (TextureFont ptr) = TF.c'texture_font_delete ptr
@@ -57,6 +90,3 @@ underlineThickness (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'
 
 size :: TextureFont -> IO PtSize
 size (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'size ptr)
-
-atlas :: TextureFont -> IO TextureAtlas
-atlas (TextureFont ptr) = TextureAtlas <$> peek (TF.p'texture_font_t'atlas ptr)

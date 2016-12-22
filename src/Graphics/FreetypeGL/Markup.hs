@@ -23,8 +23,6 @@ import qualified Graphics.FreetypeGL.TextureFont as TF
 -- really don't belong in Markup, and are used to select a font. We
 -- prefer to load fonts via file paths directly.
 
--- Ignoring the 'rise' field which is ignored by
--- the library
 data Markup = Markup
     { spacing :: !Float
     , gamma :: !Float
@@ -60,7 +58,6 @@ withMarkupPtr Markup{..} font@(TextureFont fontPtr) act =
                 MU.C'markup_t
                 -- family,bold,italic unneeded, we always give a font:
                 nullPtr (realToFrac size) 0 0
-                0 -- rise is ignored
                 (realToFrac spacing)
                 (realToFrac gamma)
                 (RGBA.toVec4 foregroundColor)
