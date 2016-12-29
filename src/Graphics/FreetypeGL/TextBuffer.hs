@@ -133,3 +133,4 @@ render (TextShaderProgram prog uniforms) atlas (TextBuffer ptr) =
         GL.blendColor $= GL.Color4 1 1 1 1
         buffer <- peek (TB.p'text_buffer_t'buffer ptr)
         VB.c'vertex_buffer_render buffer glTriangles
+        GL.currentProgram $= Nothing
