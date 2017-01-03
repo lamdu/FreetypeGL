@@ -66,7 +66,7 @@ loop win tuples =
                             ortho 0 (fromIntegral xres) 0 (fromIntegral yres) (-1) 1
                         forM_ tuples $ \(shaders, atlas, textBuffer) ->
                             do
-                                TextureAtlas.upload atlas
+                                TextureAtlas.uploadIfNeeded atlas
                                 forM_ shaders $ \shader ->
                                     do
                                         GL.currentProgram $= Just (shaderProgram shader)
