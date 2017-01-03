@@ -45,7 +45,7 @@ ident =
     , 0, 0, 0, 1
     ]
 
-loop :: GLFW.Window -> [(TextShaderProgram, TextureAtlas, TextBuffer)] -> IO ()
+loop :: GLFW.Window -> [([TextShaderProgram], TextureAtlas, TextBuffer)] -> IO ()
 loop win tuples =
     go (0::Int)
     where
@@ -64,15 +64,17 @@ loop win tuples =
                         identMat <- ident
                         orthoMat <-
                             ortho 0 (fromIntegral xres) 0 (fromIntegral yres) (-1) 1
-                        forM_ tuples $ \(shader, atlas, textBuffer) ->
+                        forM_ tuples $ \(shaders, atlas, textBuffer) ->
                             do
                                 TextureAtlas.upload atlas
-                                GL.currentProgram $= Just (shaderProgram shader)
-                                let uniforms = shaderUniforms shader
-                                GL.uniform (uniformModel uniforms) $= identMat
-                                GL.uniform (uniformView uniforms) $= identMat
-                                GL.uniform (uniformProjection uniforms) $= orthoMat
-                                TextBuffer.render shader atlas textBuffer
+                                forM_ shaders $ \shader ->
+                                    do
+                                        GL.currentProgram $= Just (shaderProgram shader)
+                                        let uniforms = shaderUniforms shader
+                                        GL.uniform (uniformModel uniforms) $= identMat
+                                        GL.uniform (uniformView uniforms) $= identMat
+                                        GL.uniform (uniformProjection uniforms) $= orthoMat
+                                        TextBuffer.render shader atlas textBuffer
                         GLFW.swapBuffers win
                         GLFW.pollEvents
                         go (i+1)
@@ -96,6 +98,7 @@ main =
                 dfFont <- TextureFont.newFromFile atlas fontSize TextureFont.RenderSignedDistanceField ttfPath
                 lcdFont <- TextureFont.newFromFile lcdAtlas fontSize TextureFont.RenderNormal ttfPath
                 shader <- Shaders.normalShader
+                lcdShaders <- Shaders.lcdShaders
                 dfShader <- Shaders.distanceFieldShader
                 GLFW.swapInterval 1
                 initFreetypeGL
@@ -121,7 +124,9 @@ main =
                                             text $ "Gamma = " <> Text.pack (show g) <> "!\n"
                                             text "0123456789ABCDEF abcdef\n\n"
                             loop win
-                                [ (shader, atlas, normTextBuffer)
-                                , (shader, lcdAtlas, lcdTextBuffer)
-                                , (dfShader, atlas, dfTextBuffer)
+                                [ ([shader], atlas, normTextBuffer)
+                                , ( [ Shaders.textLcdPassA lcdShaders
+                                    , Shaders.textLcdPassB lcdShaders]
+                                  , lcdAtlas, lcdTextBuffer)
+                                , ([dfShader], atlas, dfTextBuffer)
                                 ]

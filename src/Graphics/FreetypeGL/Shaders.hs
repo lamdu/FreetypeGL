@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
 
 module Graphics.FreetypeGL.Shaders
-    ( TextShaderProgram(..), TextShaderUniforms(..)
-    , normalShader, distanceFieldShader
+    ( TextShaderProgram(..), TextShaderUniforms(..), TextLcdShaders(..)
+    , normalShader, lcdShaders, distanceFieldShader
     ) where
 
 import qualified Bindings.FreetypeGL.Paths as Paths
@@ -23,6 +23,16 @@ data TextShaderUniforms a = TextShaderUniforms
 data TextShaderProgram = TextShaderProgram
     { shaderProgram :: GL.Program
     , shaderUniforms :: TextShaderUniforms GL.UniformLocation
+    }
+
+-- For sub-pixel rendering on LCD screens freetype-gl uses two rendering passes.
+-- One pass obscures the background and the other adds the color.
+-- This could had been achieved in one pass using OpenGL extensions -
+-- either GL_ARB_blend_func_extended or GL_EXT_blend_color
+data TextLcdShaders =
+    TextLcdShaders
+    { textLcdPassA :: TextShaderProgram
+    , textLcdPassB :: TextShaderProgram
     }
 
 glOp ::
@@ -69,11 +79,11 @@ getUniformLocation program name =
             fail ("Uniform " ++ show name ++ " does not exist in program")
         return loc
 
-normalShader :: IO TextShaderProgram
-normalShader =
+commonShader :: IO FilePath -> IO TextShaderProgram
+commonShader fragPath =
     do
         prog <-
-            join $ loadProgram <$> Paths.textShaderVert <*> Paths.textShaderFrag
+            join $ loadProgram <$> Paths.textShaderVert <*> fragPath
         TextShaderProgram prog <$>
             traverse (getUniformLocation prog) uniformNames
     where
@@ -86,6 +96,15 @@ normalShader =
             , uniformProjection = "projection"
             , uniformMColor = Nothing
             }
+
+normalShader :: IO TextShaderProgram
+normalShader = commonShader Paths.textShaderFrag
+
+lcdShaders :: IO TextLcdShaders
+lcdShaders =
+    TextLcdShaders
+    <$> commonShader Paths.textTwoPassAFrag
+    <*> commonShader Paths.textTwoPassBFrag
 
 distanceFieldShader :: IO TextShaderProgram
 distanceFieldShader =
