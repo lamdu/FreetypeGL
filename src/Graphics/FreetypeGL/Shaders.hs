@@ -22,6 +22,7 @@ data TextShaderUniforms a = TextShaderUniforms
 
 data TextShaderProgram = TextShaderProgram
     { shaderProgram :: GL.Program
+    , shaderBlendFunc :: (GL.BlendingFactor, GL.BlendingFactor)
     , shaderUniforms :: TextShaderUniforms GL.UniformLocation
     }
 
@@ -79,12 +80,14 @@ getUniformLocation program name =
             fail ("Uniform " ++ show name ++ " does not exist in program")
         return loc
 
-commonShader :: IO FilePath -> IO TextShaderProgram
-commonShader fragPath =
+commonShader ::
+    (GL.BlendingFactor, GL.BlendingFactor) -> IO FilePath ->
+    IO TextShaderProgram
+commonShader blend fragPath =
     do
         prog <-
             join $ loadProgram <$> Paths.textShaderVert <*> fragPath
-        TextShaderProgram prog <$>
+        TextShaderProgram prog blend <$>
             traverse (getUniformLocation prog) uniformNames
     where
         uniformNames =
@@ -98,13 +101,14 @@ commonShader fragPath =
             }
 
 normalShader :: IO TextShaderProgram
-normalShader = commonShader Paths.textShaderFrag
+normalShader =
+    commonShader (GL.SrcAlpha, GL.OneMinusSrcAlpha) Paths.textShaderFrag
 
 lcdShaders :: IO TextLcdShaders
 lcdShaders =
     TextLcdShaders
-    <$> commonShader Paths.textTwoPassAFrag
-    <*> commonShader Paths.textTwoPassBFrag
+    <$> commonShader (GL.Zero, GL.OneMinusSrcColor) Paths.textTwoPassAFrag
+    <*> commonShader (GL.SrcAlpha, GL.One) Paths.textTwoPassBFrag
 
 distanceFieldShader :: IO TextShaderProgram
 distanceFieldShader =
@@ -114,7 +118,7 @@ distanceFieldShader =
             loadProgram
             <$> Paths.textDistanceFieldShaderVert
             <*> Paths.textDistanceFieldShaderFrag
-        TextShaderProgram prog <$>
+        TextShaderProgram prog (GL.SrcAlpha, GL.OneMinusSrcAlpha) <$>
             traverse (getUniformLocation prog) uniformNames
     where
         uniformNames =

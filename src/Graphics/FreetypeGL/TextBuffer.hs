@@ -110,7 +110,7 @@ glTriangles = 4
 -- | The given program's "tex" and "pixel" uniforms are bound
 -- here. Other uniforms must be bound by the caller
 render :: TextShaderProgram -> TextureAtlas -> TextBuffer -> IO ()
-render (TextShaderProgram prog uniforms) atlas (TextBuffer ptr) =
+render (TextShaderProgram prog blend uniforms) atlas (TextBuffer ptr) =
     do
         GL.currentProgram $= Just prog
         GL.uniform (uniformTexture uniforms) $= GL.TextureUnit 0
@@ -129,8 +129,8 @@ render (TextShaderProgram prog uniforms) atlas (TextBuffer ptr) =
         GL.blend $= GL.Enabled
         GL.activeTexture $= GL.TextureUnit 0
         GL.textureBinding GL.Texture2D $= Just (TextureAtlas.glTexture atlas)
-        GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
-        GL.blendColor $= GL.Color4 1 1 1 1
+        GL.blendFunc $= blend
         buffer <- peek (TB.p'text_buffer_t'buffer ptr)
         VB.c'vertex_buffer_render buffer glTriangles
+        GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
         GL.currentProgram $= Nothing

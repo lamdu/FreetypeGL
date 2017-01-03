@@ -57,7 +57,6 @@ loop win tuples =
                         GL.clearColor $= GL.Color4 0 0 0 0
                         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
                         GL.blend $= GL.Enabled
-                        GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
 
                         (xres, yres) <- GLFW.getFramebufferSize win
 
