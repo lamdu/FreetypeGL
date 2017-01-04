@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
 
 module Graphics.FreetypeGL.Shaders
-    ( TextShaderProgram(..), TextShaderUniforms(..), TextLcdShaders(..)
+    ( TextShaderProgram(..), TextShaderUniforms(..)
     , normalShader, lcdShaders, distanceFieldShader
     ) where
 
@@ -24,16 +24,6 @@ data TextShaderProgram = TextShaderProgram
     { shaderProgram :: GL.Program
     , shaderBlendFunc :: (GL.BlendingFactor, GL.BlendingFactor)
     , shaderUniforms :: TextShaderUniforms GL.UniformLocation
-    }
-
--- For sub-pixel rendering on LCD screens freetype-gl uses two rendering passes.
--- One pass obscures the background and the other adds the color.
--- This could had been achieved in one pass using OpenGL extensions -
--- either GL_ARB_blend_func_extended or GL_EXT_blend_color
-data TextLcdShaders =
-    TextLcdShaders
-    { textLcdPassA :: TextShaderProgram
-    , textLcdPassB :: TextShaderProgram
     }
 
 glOp ::
@@ -104,11 +94,17 @@ normalShader :: IO TextShaderProgram
 normalShader =
     commonShader (GL.SrcAlpha, GL.OneMinusSrcAlpha) Paths.textShaderFrag
 
-lcdShaders :: IO TextLcdShaders
+-- For sub-pixel rendering on LCD screens freetype-gl uses two rendering passes.
+-- One pass obscures the background and the other adds the color.
+-- Note:
+-- This could had been achieved in one pass using OpenGL extensions -
+-- either GL_ARB_blend_func_extended or GL_EXT_blend_color
+lcdShaders :: IO [TextShaderProgram]
 lcdShaders =
-    TextLcdShaders
-    <$> commonShader (GL.Zero, GL.OneMinusSrcColor) Paths.textTwoPassAFrag
-    <*> commonShader (GL.SrcAlpha, GL.One) Paths.textTwoPassBFrag
+    sequence
+    [ commonShader (GL.Zero, GL.OneMinusSrcColor) Paths.textTwoPassAFrag
+    , commonShader (GL.SrcAlpha, GL.One) Paths.textTwoPassBFrag
+    ]
 
 distanceFieldShader :: IO TextShaderProgram
 distanceFieldShader =

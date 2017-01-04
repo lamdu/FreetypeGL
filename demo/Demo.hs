@@ -124,8 +124,6 @@ main =
                                             text "0123456789ABCDEF abcdef\n\n"
                             loop win
                                 [ ([shader], atlas, normTextBuffer)
-                                , ( [ Shaders.textLcdPassA lcdShaders
-                                    , Shaders.textLcdPassB lcdShaders]
-                                  , lcdAtlas, lcdTextBuffer)
+                                , (lcdShaders, lcdAtlas, lcdTextBuffer)
                                 , ([dfShader], atlas, dfTextBuffer)
                                 ]
