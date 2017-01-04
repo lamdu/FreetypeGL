@@ -2,12 +2,13 @@ module Graphics.FreetypeGL.TextureAtlas
     ( TextureAtlas(..)
     , RenderDepth(..), c'renderDepth
     , new, delete
-    , uploadIfNeeded
+    , uploadIfNeeded, getTexture
     ) where
 
 import qualified Bindings.FreetypeGL.TextBuffer as TB
 import qualified Bindings.FreetypeGL.TextureAtlas as TA
 import           Control.Monad (when)
+import           Data.Foldable (traverse_)
 import           Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import           Foreign.C.Types (CSize(..))
 import           Foreign.Marshal.Error (throwIfNull)
@@ -21,9 +22,21 @@ data RenderDepth = LCD_FILTERING_ON | LCD_FILTERING_OFF
 data TextureAtlas =
     TextureAtlas
     { ptr :: Ptr TA.C'texture_atlas_t
-    , glTexture :: GL.TextureObject
+    , glTextureRef :: IORef (Maybe GL.TextureObject)
     , taUploadedRef :: IORef CSize
     }
+
+getTexture :: TextureAtlas -> IO GL.TextureObject
+getTexture atlas =
+    do
+        mTexture <- readIORef (glTextureRef atlas)
+        case mTexture of
+            Just texture -> return texture
+            Nothing ->
+                do
+                    texture <- GL.genObjectName
+                    writeIORef (glTextureRef atlas) (Just texture)
+                    return texture
 
 c'renderDepth :: RenderDepth -> CSize
 c'renderDepth LCD_FILTERING_ON = TB.c'LCD_FILTERING_ON
@@ -33,7 +46,7 @@ delete :: TextureAtlas -> IO ()
 delete (TextureAtlas p t _) =
     do
         TA.c'texture_atlas_delete p
-        GL.deleteObjectName t
+        readIORef t >>= traverse_ GL.deleteObjectName
 
 new
     :: Word -- ^ width
@@ -45,17 +58,18 @@ new width height depth =
     <$> throwIfNull "texture_atlas_new failed"
         ( TA.c'texture_atlas_new
           (fromIntegral width) (fromIntegral height) (c'renderDepth depth) )
-    <*> GL.genObjectName
+    <*> newIORef Nothing
     <*> newIORef 0
 
 upload :: TextureAtlas -> IO ()
-upload (TextureAtlas atlasPtr texture _) =
+upload atlas =
     do
+        texture <- getTexture atlas
         GL.textureBinding GL.Texture2D $= Just texture
         GL.textureWrapMode GL.Texture2D GL.S $= (GL.Repeated, GL.ClampToEdge)
         GL.textureWrapMode GL.Texture2D GL.T $= (GL.Repeated, GL.ClampToEdge)
         GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Linear')
-        TA.C'texture_atlas_t width height depth _ _ dataPtr <- peek atlasPtr
+        TA.C'texture_atlas_t width height depth _ _ dataPtr <- peek (ptr atlas)
         let size = GL.TextureSize2D (fromIntegral width) (fromIntegral height)
         let format
                 | depth == 1 = GL.R8

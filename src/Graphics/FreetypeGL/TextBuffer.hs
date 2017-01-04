@@ -128,7 +128,8 @@ render (TextShaderProgram prog blend uniforms) atlas (TextBuffer ptr) =
             Just color -> GL.uniform color $= GL.Vector4 1 1 1 (1 :: Float)
         GL.blend $= GL.Enabled
         GL.activeTexture $= GL.TextureUnit 0
-        GL.textureBinding GL.Texture2D $= Just (TextureAtlas.glTexture atlas)
+        texture <- TextureAtlas.getTexture atlas
+        GL.textureBinding GL.Texture2D $= Just texture
         GL.blendFunc $= blend
         buffer <- peek (TB.p'text_buffer_t'buffer ptr)
         VB.c'vertex_buffer_render buffer glTriangles
