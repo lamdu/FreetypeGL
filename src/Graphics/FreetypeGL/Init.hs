@@ -15,6 +15,6 @@ initFreetypeGL = return ()
 #else
 initFreetypeGL =
     throwIf_ (/= GLEW.c'GLEW_OK)
-    (error . ("glewInit error: " ++) . show)
+    (("glewInit error: " ++) . show)
     GLEW.c'glewInit
 #endif
