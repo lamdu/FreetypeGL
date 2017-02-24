@@ -23,7 +23,7 @@ library
                      , Graphics.FreetypeGL.TextBuffer
                      , Graphics.FreetypeGL.TextureFont
                      , Graphics.FreetypeGL.TextureAtlas
-  build-depends:       OpenGL >= 3.0.0
+  build-depends:       OpenGL >= 3.0.1
                      , base >= 4.7 && < 5
                      , bindings-freetype-gl == 0.1.*
                      , bytestring >= 0.9
