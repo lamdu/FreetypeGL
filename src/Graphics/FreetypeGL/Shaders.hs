@@ -5,8 +5,9 @@ module Graphics.FreetypeGL.Shaders
     , normalShader, lcdShaders, distanceFieldShader
     ) where
 
-import qualified Bindings.FreetypeGL.Paths as Paths
+import qualified Bindings.FreetypeGL.Shaders as Shaders
 import           Control.Monad (join, unless, when)
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.Rendering.OpenGL as GL
@@ -38,21 +39,20 @@ glOp msg op status infoLog obj =
                 info <- infoLog obj
                 fail $ msg ++ " failed: " ++ info
 
-loadShader :: GL.ShaderType -> FilePath -> IO GL.Shader
-loadShader shaderType filename =
+loadShader :: GL.ShaderType -> ByteString -> IO GL.Shader
+loadShader shaderType shaderSource =
     do
         shader <- GL.createShader shaderType
-        shaderSource <- BS.readFile filename
         GL.shaderSourceBS shader $= shaderSource
-        glOp ("Shader compilation of " ++ show filename)
+        glOp ("Shader compilation of: " ++ show shaderSource)
             GL.compileShader GL.compileStatus GL.shaderInfoLog shader
         return shader
 
-loadProgram :: FilePath -> FilePath -> IO GL.Program
-loadProgram vertFilename fragFilename =
+loadProgram :: ByteString -> ByteString -> IO GL.Program
+loadProgram vertSource fragSource =
     do
-        vert <- loadShader GL.VertexShader vertFilename
-        frag <- loadShader GL.FragmentShader fragFilename
+        vert <- loadShader GL.VertexShader vertSource
+        frag <- loadShader GL.FragmentShader fragSource
         prog <- GL.createProgram
         GL.attachShader prog vert
         GL.deleteObjectName vert
@@ -71,12 +71,11 @@ getUniformLocation program name =
         return loc
 
 commonShader ::
-    (GL.BlendingFactor, GL.BlendingFactor) -> IO FilePath ->
+    (GL.BlendingFactor, GL.BlendingFactor) -> ByteString ->
     IO TextShaderProgram
-commonShader blend fragPath =
+commonShader blend fragShader =
     do
-        prog <-
-            join $ loadProgram <$> Paths.textShaderVert <*> fragPath
+        prog <- loadProgram Shaders.textShaderVert fragShader
         TextShaderProgram prog blend <$>
             traverse (getUniformLocation prog) uniformNames
     where
@@ -92,7 +91,7 @@ commonShader blend fragPath =
 
 normalShader :: IO TextShaderProgram
 normalShader =
-    commonShader (GL.SrcAlpha, GL.OneMinusSrcAlpha) Paths.textShaderFrag
+    commonShader (GL.SrcAlpha, GL.OneMinusSrcAlpha) Shaders.textShaderFrag
 
 -- For sub-pixel rendering on LCD screens freetype-gl uses two rendering passes.
 -- One pass obscures the background and the other adds the color.
@@ -102,18 +101,17 @@ normalShader =
 lcdShaders :: IO [TextShaderProgram]
 lcdShaders =
     sequence
-    [ commonShader (GL.Zero, GL.OneMinusSrcColor) Paths.textTwoPassAFrag
-    , commonShader (GL.SrcAlpha, GL.One) Paths.textTwoPassBFrag
+    [ commonShader (GL.Zero, GL.OneMinusSrcColor) Shaders.textTwoPassAFrag
+    , commonShader (GL.SrcAlpha, GL.One) Shaders.textTwoPassBFrag
     ]
 
 distanceFieldShader :: IO TextShaderProgram
 distanceFieldShader =
     do
         prog <-
-            join $
             loadProgram
-            <$> Paths.textDistanceFieldShaderVert
-            <*> Paths.textDistanceFieldShaderFrag
+            Shaders.textDistanceFieldShaderVert
+            Shaders.textDistanceFieldShaderFrag
         TextShaderProgram prog (GL.SrcAlpha, GL.OneMinusSrcAlpha) <$>
             traverse (getUniformLocation prog) uniformNames
     where
