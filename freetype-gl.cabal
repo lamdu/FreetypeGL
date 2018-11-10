@@ -36,7 +36,7 @@ executable freetype-gl-demo
   hs-source-dirs:      demo
   main-is:             Demo.hs
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       GLFW-b == 1.4.*
+  build-depends:       GLFW-b
                      , OpenGL
                      , base
                      , bindings-freetype-gl
