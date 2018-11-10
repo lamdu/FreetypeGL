@@ -6,9 +6,8 @@ module Graphics.FreetypeGL.Shaders
     ) where
 
 import qualified Bindings.FreetypeGL.Shaders as Shaders
-import           Control.Monad (join, unless, when)
+import           Control.Monad (unless, when)
 import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.Rendering.OpenGL as GL
 
