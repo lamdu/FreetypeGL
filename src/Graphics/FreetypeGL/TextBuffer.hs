@@ -5,7 +5,7 @@ module Graphics.FreetypeGL.TextBuffer
     , new, delete
     , Pen(..)
     , clear
-    , addText
+    , addText, addChar
     , Align(..), align
     , render
     , BoundingBox(..)
@@ -19,11 +19,12 @@ import qualified Bindings.FreetypeGL.VertexBuffer as VB
 import           Control.Monad.Trans.State (StateT(..))
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Text.Foreign as TextForeign
+import qualified Data.Text.Foreign as TextForeign
+import           Foreign.C.String (CStringLen, withCStringLen)
 import           Foreign.C.Types (CUInt)
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Error (throwIfNull)
-import           Foreign.Ptr (Ptr)
+import           Foreign.Ptr (Ptr, nullPtr)
 import           Foreign.Storable (Storable(..))
 import           Graphics.FreetypeGL.Markup (Markup(..))
 import qualified Graphics.FreetypeGL.Markup as MU
@@ -69,6 +70,23 @@ addText (TextBuffer ptr) markup font text
         TextForeign.withCStringLen text $ \(charsUtf8, _byteLen) ->
         TB.c'text_buffer_add_text ptr penPtr markupPtr charsUtf8
         (fromIntegral (Text.length text))
+
+addChar :: TextBuffer -> Markup -> TextureFont -> Char -> Maybe Char -> StateT Pen IO ()
+addChar (TextBuffer ptr) markup font char prevChar =
+    withPen $ \penPtr ->
+    MU.withMarkupPtr markup font $ \markupPtr ->
+    withChar char $ \(charUtf8, _byteLen) ->
+    withPrevChar $ \prevCharUtf8 ->
+
+    TB.c'text_buffer_add_char ptr penPtr markupPtr charUtf8 prevCharUtf8
+    where
+        withPrevChar f =
+            case prevChar of
+            Nothing -> f nullPtr
+            Just c -> withChar c $ \(prevCharsUtf8, _byteLen) -> f prevCharsUtf8
+
+withChar :: Char -> (CStringLen -> IO a) -> IO a
+withChar = withCStringLen . (:[])
 
 clear :: TextBuffer -> IO ()
 clear (TextBuffer ptr) = TB.c'text_buffer_clear ptr
