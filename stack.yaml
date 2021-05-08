@@ -1,13 +1,12 @@
 packages:
 - '.'
-- location:
-    git: https://github.com/lamdu/bindings-freetype-gl
-    commit: 60c8daadacaef620865ca174c0f5c46607b5aab8
-  extra-dep: True
-- location:
-    git: https://github.com/lamdu/freetype2
-    commit: 520351a6e1cf5b18edae45d0e4a20758211fa8da
-  extra-dep: True
-extra-deps: []
-resolver: lts-12.17
+
+extra-deps:
+- github: lamdu/bindings-freetype-gl
+  commit: abcb891cf2ed01edb2d02197ef2b354d6ff43db5
+- github: lamdu/freetype2
+  commit: 046328d92312d65638440132c016a3081d9c32a4
+
+resolver: lts-17.10
+
 allow-newer: true

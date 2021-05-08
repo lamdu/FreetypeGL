@@ -5,7 +5,6 @@ module Main (main) where
 import           Control.Exception (bracket_, bracket)
 import           Control.Monad (forM_, unless)
 import           Control.Monad.Trans.State (evalStateT)
-import           Data.Monoid ((<>))
 import qualified Data.Text as Text
 import           Graphics.FreetypeGL.Init (initFreetypeGL)
 import qualified Graphics.FreetypeGL.Markup as Markup
