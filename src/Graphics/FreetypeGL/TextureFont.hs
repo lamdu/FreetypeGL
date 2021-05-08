@@ -2,6 +2,7 @@
 
 module Graphics.FreetypeGL.TextureFont
     ( TextureFont(..), newFromFile, newFromMemory, delete
+    , TextureGlyph(..), glyph, glyphAdvanceX, glyphAdvanceY, glyphKerning
     , RenderMode(..), PtSize, size, OutlineThickness
     , height, lineGap, ascender, descender, underlinePosition, underlineThickness
     ) where
@@ -16,7 +17,8 @@ import           Foreign.Storable (peek, poke)
 import           Graphics.FreetypeGL.TextureAtlas (TextureAtlas)
 import qualified Graphics.FreetypeGL.TextureAtlas as TextureAtlas
 
-data TextureFont = TextureFont (Ptr TF.C'texture_font_t)
+newtype TextureGlyph = TextureGlyph (Ptr TF.C'texture_glyph_t)
+newtype TextureFont = TextureFont (Ptr TF.C'texture_font_t)
 
 type PtSize = Float
 type OutlineThickness = Float
@@ -90,3 +92,18 @@ underlineThickness (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'
 
 size :: TextureFont -> IO PtSize
 size (TextureFont ptr) = realToFrac <$> peek (TF.p'texture_font_t'size ptr)
+
+glyph :: Char -> TextureFont -> IO TextureGlyph
+glyph c (TextureFont ptr) =
+    TextureGlyph <$> withCString [c] (TF.c'texture_font_get_glyph ptr)
+
+glyphAdvanceX :: TextureGlyph -> IO Float
+glyphAdvanceX (TextureGlyph ptr) = realToFrac <$> peek (TF.p'texture_glyph_t'advance_x ptr)
+
+glyphAdvanceY :: TextureGlyph -> IO Float
+glyphAdvanceY (TextureGlyph ptr) = realToFrac <$> peek (TF.p'texture_glyph_t'advance_y ptr)
+
+glyphKerning :: Char -> TextureGlyph -> IO Float
+glyphKerning prevChar (TextureGlyph ptr) =
+    withCString [prevChar] $ \prevCharUtf8 ->
+    realToFrac <$> TF.c'texture_glyph_get_kerning ptr prevCharUtf8
